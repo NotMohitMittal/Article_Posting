@@ -2,21 +2,24 @@ require("dotenv").config();
 const path = require("path");
 const express = require("express");
 
-const server = require("./src/app");
+const app = require("./src/app");
 const connectDB = require("./src/DB/db");
-
-const __dirname = path.resolve();
 
 connectDB();
 
 if (process.env.ENVIRONMENT === "production") {
-  app.use(express.static(path.join(__dirname, "/FrontEnd/dist")));
+  // Use ".." to step out of the BackEnd folder and into the FrontEnd folder
+  const frontendPath = path.join(__dirname, "..", "FrontEnd", "dist");
+  
+  app.use(express.static(frontendPath));
 
-  app.get("*", (req, res) => {
-    res.sendFile(path.resolve(__dirname, "FrontEnd", "dist", "index.html"));
+  app.get((req, res) => {
+    res.sendFile(path.join(frontendPath, "index.html"));
   });
 }
 
-server.listen(process.env.PORT, () => {
-  console.log("Server running ");
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, () => {
+  console.log(`Server running on port ${PORT}`);
 });
