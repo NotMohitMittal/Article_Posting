@@ -4,14 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-<<<<<<< HEAD
     "build": "npm install --prefix BackEnd && npm install --prefix FrontEnd && npm run build --prefix FrontEnd",
     "start": "npm start --prefix BackEnd"
-=======
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build" : "npm install && npm install --prefix FrontEnd && npm run build --prefix FrontEnd",
-    "start" : "node BackEnd/server.js"
->>>>>>> 12d0d7c8ef3817a4d8740256bccf0d7bdf1bb21c
   },
   "keywords": [],
   "author": "",
