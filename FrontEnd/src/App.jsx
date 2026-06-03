@@ -1,64 +1,96 @@
 import React, { useEffect, useState } from "react";
+import { Navigate, Route, Routes } from "react-router-dom";
+import { Toaster } from "react-hot-toast";
+
+import Sidebar from "./components/Sidebar";
+import MainBody from "./components/MainBody";
+import ArticleReader from "./components/ArticleReader";
+import AddSubjectModal from "./components/AddSubjectModel";
+import WritingStudio from "./components/WritingStudio";
+import LoginPage from "./pages/LoginPage";
+import RegisterPage from "./pages/RegisterPage";
+
 import { useAuthStore } from "./context/AuthContext";
 import { useArticleStore } from "./context/ArticleContext";
 import { useThemeStore } from "./context/ThemeContext";
 
-// Import all your components
-import Sidebar from "./components/Sidebar";
-import MainBody from "./components/MainBody";
-import ArticleReader from "./components/ArticleReader";
-import AddSubjectModel from "./components/AddSubjectModel";
-import WritingStudio from "./components/WritingStudio";
-
-const App = () => {
+// ── Protected layout (sidebar + main content area) ──────────────────────────
+const AppLayout = () => {
   const { articleToRead, clearArticleToRead } = useArticleStore();
-  const { getProfile } = useAuthStore();
   const { isDarkMode } = useThemeStore();
 
-  const [isAddSubjectOpen, setIsAddSubjectOpen] = useState(false);
-  const [isWritingStudioOpen, setIsWritingStudioOpen] = useState(false);
-
-  useEffect(() => {
-    // getProfile();
-  }, []);
+  // Modal / view state lifted here so Sidebar can open them
+  const [addSubjectOpen, setAddSubjectOpen] = useState(false);
+  const [writingOpen, setWritingOpen] = useState(false);
 
   return (
     <div
-      className={`h-screen flex overflow-hidden font-sans transition-colors duration-300
-        ${isDarkMode ? "bg-[#080a14] text-slate-200" : "bg-[#f0f0f8] text-gray-800"}`}
+      className={`flex h-screen overflow-hidden transition-colors duration-300 ${
+        isDarkMode ? "bg-[#090b1a]" : "bg-gray-100"
+      }`}
     >
-      {/* ── Sidebar ── */}
+      {/* Sidebar — receives the two action props it needs */}
       <Sidebar
-        onAddSubject={() => setIsAddSubjectOpen(true)}
-        onWriteArticle={() => setIsWritingStudioOpen(true)}
+        onAddSubject={() => setAddSubjectOpen(true)}
+        onWriteArticle={() => setWritingOpen(true)}
       />
 
-      {/* ── Main Content Area ── */}
-      <div className="flex-1 p-3 overflow-y-auto">
-        <div className="h-full rounded-2xl overflow-hidden relative">
-          {articleToRead ? (
-            <ArticleReader article={articleToRead} onBack={clearArticleToRead} />
-          ) : (
-            <MainBody />
-          )}
-        </div>
-      </div>
+      {/* Main content */}
+      <main className="flex-1 overflow-hidden p-4">
+        {articleToRead ? (
+          <ArticleReader article={articleToRead} onBack={clearArticleToRead} />
+        ) : (
+          <MainBody />
+        )}
+      </main>
 
-      {/* ── Modals & Overlays ── */}
-      <AddSubjectModel
-        open={isAddSubjectOpen}
-        onClose={() => setIsAddSubjectOpen(false)}
+      {/* Add Subject Modal */}
+      <AddSubjectModal
+        open={addSubjectOpen}
+        onClose={() => setAddSubjectOpen(false)}
       />
 
-      <WritingStudio
-        open={isWritingStudioOpen}
-        onClose={() => setIsWritingStudioOpen(false)}
-        onCreated={() => {
-          console.log("Article successfully published!");
-        }}
-      />
+      {/* FIX: Pass the 'open' prop directly just like you did above! */}
+      <WritingStudio open={writingOpen} onClose={() => setWritingOpen(false)} />
     </div>
   );
 };
 
-export default App;
+// ── Root ─────────────────────────────────────────────────────────────────────
+export default function App() {
+  const { authUser, isCheckingAuth, checkAuth } = useAuthStore();
+
+  useEffect(() => {
+    checkAuth();
+  }, [checkAuth]);
+
+  if (isCheckingAuth) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-[#090b1a]">
+        <div className="w-10 h-10 rounded-full border-4 border-violet-600 border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
+      <Routes>
+        <Route
+          path="/"
+          element={authUser ? <AppLayout /> : <Navigate to="/login" replace />}
+        />
+        <Route
+          path="/login"
+          element={!authUser ? <LoginPage /> : <Navigate to="/" replace />}
+        />
+        <Route
+          path="/register"
+          element={!authUser ? <RegisterPage /> : <Navigate to="/" replace />}
+        />
+        {/* Catch-all */}
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
+    </>
+  );
+}

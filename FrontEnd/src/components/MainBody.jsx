@@ -17,21 +17,22 @@ import {
 const estimateReadTime = (content = "") =>
   Math.max(1, Math.ceil(content.trim().split(/\s+/).length / 200));
 
-// Dark mode: violet/indigo palette
-// Light mode: purple/cyan palette
+// Dark mode: zinc/neutral palette
+// Light mode: gray/black palette
 const DARK_TAG_COLORS = [
-  "bg-violet-500/10 text-violet-400 border-violet-500/20",
-  "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
-  "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
-  "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20",
-  "bg-sky-500/10 text-sky-400 border-sky-500/20",
+  "bg-zinc-800/50 text-zinc-300 border-zinc-700/50",
+  "bg-neutral-800/50 text-neutral-300 border-neutral-700/50",
+  "bg-stone-800/50 text-stone-300 border-stone-700/50",
+  "bg-gray-800/50 text-gray-300 border-gray-700/50",
+  "bg-slate-800/50 text-slate-300 border-slate-700/50",
 ];
+
 const LIGHT_TAG_COLORS = [
-  "bg-purple-100 text-purple-700 border-purple-200",
-  "bg-cyan-100 text-cyan-700 border-cyan-200",
-  "bg-indigo-100 text-indigo-700 border-indigo-200",
-  "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200",
-  "bg-sky-100 text-sky-700 border-sky-200",
+  "bg-zinc-100 text-zinc-700 border-zinc-200",
+  "bg-neutral-100 text-neutral-700 border-neutral-200",
+  "bg-stone-100 text-stone-700 border-stone-200",
+  "bg-gray-100 text-gray-700 border-gray-200",
+  "bg-slate-100 text-slate-700 border-slate-200",
 ];
 
 const tagColor = (i, isDark) =>
@@ -45,16 +46,16 @@ const ArticleRowCard = ({ article, onRead, isDarkMode }) => {
     <div
       className={`group flex flex-col md:flex-row rounded-2xl p-5 md:p-6 border transition-all duration-300 gap-4 md:gap-6
         ${isDarkMode
-          ? "bg-[#111425]/60 hover:bg-[#151830]/90 border-[#1e2242]/80 hover:border-violet-500/40 hover:shadow-lg hover:shadow-violet-900/20"
-          : "bg-white hover:bg-purple-50/50 border-gray-200/80 hover:border-purple-300 hover:shadow-md hover:shadow-purple-100"
+          ? "bg-zinc-900/60 hover:bg-zinc-800/90 border-zinc-800/80 hover:border-zinc-600/40 hover:shadow-lg hover:shadow-black/20"
+          : "bg-white hover:bg-gray-50 border-gray-200/80 hover:border-gray-300 hover:shadow-md hover:shadow-gray-200"
         }`}
     >
       {/* Left icon anchor */}
       <div
         className={`hidden md:flex shrink-0 w-11 h-11 rounded-xl items-center justify-center border transition-colors
           ${isDarkMode
-            ? "bg-violet-500/10 text-violet-400 border-violet-500/20 group-hover:bg-violet-500/20"
-            : "bg-purple-100 text-purple-600 border-purple-200 group-hover:bg-purple-200"
+            ? "bg-zinc-800/50 text-zinc-300 border-zinc-700/50 group-hover:bg-zinc-700/50"
+            : "bg-gray-100 text-gray-600 border-gray-200 group-hover:bg-gray-200"
           }`}
       >
         <Bookmark size={18} />
@@ -77,27 +78,27 @@ const ArticleRowCard = ({ article, onRead, isDarkMode }) => {
         <h3
           className={`text-lg font-bold mb-1.5 truncate transition-colors
             ${isDarkMode
-              ? "text-slate-100 group-hover:text-violet-300"
-              : "text-gray-900 group-hover:text-purple-700"
+              ? "text-zinc-100 group-hover:text-white"
+              : "text-gray-900 group-hover:text-black"
             }`}
         >
           {article.article_title}
         </h3>
 
-        <p className={`text-sm line-clamp-2 leading-relaxed ${isDarkMode ? "text-slate-400" : "text-gray-500"}`}>
+        <p className={`text-sm line-clamp-2 leading-relaxed ${isDarkMode ? "text-zinc-400" : "text-gray-500"}`}>
           {/* Strip HTML tags for preview */}
           {article.article_content?.replace(/<[^>]*>/g, "") || ""}
         </p>
 
         {(article.article_author?.user_name || article.article_subject?.subject_name) && (
-          <p className={`text-xs mt-2 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+          <p className={`text-xs mt-2 ${isDarkMode ? "text-zinc-500" : "text-gray-400"}`}>
             {article.article_author?.user_name && (
               <span>by <span className="font-semibold">{article.article_author.user_name}</span></span>
             )}
             {article.article_subject?.subject_name && (
               <span className="ml-2">
                 in{" "}
-                <span className={`font-semibold ${isDarkMode ? "text-violet-400" : "text-purple-600"}`}>
+                <span className={`font-semibold ${isDarkMode ? "text-zinc-300" : "text-black"}`}>
                   {article.article_subject.subject_name}
                 </span>
               </span>
@@ -109,9 +110,9 @@ const ArticleRowCard = ({ article, onRead, isDarkMode }) => {
       {/* Meta + action */}
       <div
         className={`flex items-center md:flex-col justify-between md:justify-center shrink-0 border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-6 min-w-28
-          ${isDarkMode ? "border-[#1e2242]" : "border-gray-100"}`}
+          ${isDarkMode ? "border-zinc-800" : "border-gray-100"}`}
       >
-        <div className={`flex items-center gap-1.5 text-xs font-medium md:mb-4 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+        <div className={`flex items-center gap-1.5 text-xs font-medium md:mb-4 ${isDarkMode ? "text-zinc-500" : "text-gray-400"}`}>
           <Clock size={13} />
           {readTime} min read
         </div>
@@ -120,8 +121,8 @@ const ArticleRowCard = ({ article, onRead, isDarkMode }) => {
           onClick={() => onRead(article._id)}
           className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200
             ${isDarkMode
-              ? "bg-[#1e2242] hover:bg-violet-600 text-violet-400 hover:text-white"
-              : "bg-purple-100 hover:bg-purple-600 text-purple-700 hover:text-white"
+              ? "bg-zinc-800 hover:bg-zinc-200 text-zinc-300 hover:text-black"
+              : "bg-gray-100 hover:bg-black text-gray-700 hover:text-white"
             }`}
         >
           Read
@@ -136,14 +137,14 @@ const ArticleRowCard = ({ article, onRead, isDarkMode }) => {
 const EmptyState = ({ isDarkMode }) => (
   <div className="h-full flex flex-col items-center justify-center text-center max-w-md mx-auto py-20">
     <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-6 border ${
-      isDarkMode ? "bg-[#111425] border-[#1e2242]" : "bg-gray-50 border-gray-200"
+      isDarkMode ? "bg-zinc-900 border-zinc-800" : "bg-gray-50 border-gray-200"
     }`}>
-      <FileText size={32} className={isDarkMode ? "text-slate-600" : "text-gray-300"} />
+      <FileText size={32} className={isDarkMode ? "text-zinc-600" : "text-gray-300"} />
     </div>
-    <h2 className={`text-xl font-bold mb-2 ${isDarkMode ? "text-slate-200" : "text-gray-800"}`}>
+    <h2 className={`text-xl font-bold mb-2 ${isDarkMode ? "text-zinc-200" : "text-gray-800"}`}>
       No Articles Found
     </h2>
-    <p className={`text-sm ${isDarkMode ? "text-slate-500" : "text-gray-500"}`}>
+    <p className={`text-sm ${isDarkMode ? "text-zinc-500" : "text-gray-500"}`}>
       Select a subject from the sidebar to view its articles, or check back later for new content.
     </p>
   </div>
@@ -166,24 +167,24 @@ const MainBody = () => {
     <div
       className={`h-full w-full rounded-2xl border shadow-2xl overflow-hidden flex flex-col transition-colors duration-300
         ${isDarkMode
-          ? "bg-[#0d0f1a] border-[#1e2035] text-slate-200"
-          : "bg-[#fafbff] border-gray-200 text-gray-800"
+          ? "bg-[#121212] border-zinc-800 text-zinc-200"
+          : "bg-white border-gray-200 text-gray-800"
         }`}
     >
       {/* ── Header ── */}
       <div
         className={`px-6 md:px-8 py-5 border-b sticky top-0 z-10 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors duration-300
           ${isDarkMode
-            ? "bg-[#0d0f1a]/95 border-[#1e2035] backdrop-blur-md"
+            ? "bg-[#121212]/95 border-zinc-800 backdrop-blur-md"
             : "bg-white/95 border-gray-200 backdrop-blur-md"
           }`}
       >
         <div>
-          <h1 className={`text-2xl font-bold flex items-center gap-3 ${isDarkMode ? "text-slate-100" : "text-gray-900"}`}>
-            <BookOpen className={isDarkMode ? "text-violet-400" : "text-purple-500"} size={26} />
+          <h1 className={`text-2xl font-bold flex items-center gap-3 ${isDarkMode ? "text-zinc-100" : "text-gray-900"}`}>
+            <BookOpen className={isDarkMode ? "text-zinc-300" : "text-black"} size={26} />
             {selectedSubject?.subject_name ?? "Notebook"}
           </h1>
-          <p className={`text-sm mt-0.5 ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+          <p className={`text-sm mt-0.5 ${isDarkMode ? "text-zinc-500" : "text-gray-400"}`}>
             {articles.length > 0
               ? `${articles.length} article${articles.length !== 1 ? "s" : ""}`
               : "Select a subject from the sidebar"}
@@ -194,14 +195,14 @@ const MainBody = () => {
           {/* Live indicator */}
           <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm font-medium transition-colors
             ${isDarkMode
-              ? "bg-[#111425] border-[#1e2242] text-slate-400"
-              : "bg-purple-50 border-purple-200 text-purple-600"
+              ? "bg-zinc-900 border-zinc-800 text-zinc-400"
+              : "bg-gray-50 border-gray-200 text-gray-700"
             }`}
           >
             <span className={`w-2 h-2 rounded-full animate-pulse
               ${isDarkMode
-                ? "bg-violet-400 shadow-[0_0_6px_rgba(139,92,246,0.7)]"
-                : "bg-cyan-500 shadow-[0_0_6px_rgba(6,182,212,0.7)]"
+                ? "bg-zinc-300 shadow-[0_0_6px_rgba(255,255,255,0.5)]"
+                : "bg-gray-400 shadow-[0_0_6px_rgba(0,0,0,0.3)]"
               }`}
             />
             Live Feed
@@ -211,18 +212,18 @@ const MainBody = () => {
           {articles.length > 0 && (
             <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-colors
               ${isDarkMode
-                ? "bg-[#111425] border-[#1e2242] focus-within:border-violet-500/50"
-                : "bg-white border-gray-200 focus-within:border-purple-400"
+                ? "bg-zinc-900 border-zinc-800 focus-within:border-zinc-500"
+                : "bg-white border-gray-200 focus-within:border-black"
               }`}
             >
-              <Search size={14} className={isDarkMode ? "text-slate-500" : "text-gray-400"} />
+              <Search size={14} className={isDarkMode ? "text-zinc-500" : "text-gray-400"} />
               <input
                 type="text"
                 placeholder="Search articles or tags…"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className={`bg-transparent outline-none w-40 text-sm placeholder:text-slate-500
-                  ${isDarkMode ? "text-slate-200" : "text-gray-700"}`}
+                className={`bg-transparent outline-none w-40 text-sm placeholder:text-zinc-500
+                  ${isDarkMode ? "text-zinc-200" : "text-gray-700"}`}
               />
             </div>
           )}
@@ -233,8 +234,8 @@ const MainBody = () => {
       <div className="flex-1 overflow-y-auto p-6 md:p-8">
         {isFetchingArticles ? (
           <div className="h-full flex flex-col items-center justify-center gap-4">
-            <Loader2 size={38} className={`animate-spin ${isDarkMode ? "text-violet-500" : "text-purple-500"}`} />
-            <p className={`text-sm font-medium animate-pulse ${isDarkMode ? "text-slate-500" : "text-gray-400"}`}>
+            <Loader2 size={38} className={`animate-spin ${isDarkMode ? "text-zinc-400" : "text-black"}`} />
+            <p className={`text-sm font-medium animate-pulse ${isDarkMode ? "text-zinc-500" : "text-gray-500"}`}>
               Fetching articles…
             </p>
           </div>

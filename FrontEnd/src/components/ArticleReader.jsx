@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   ArrowLeft,
   Clock,
@@ -26,18 +26,19 @@ const formatDate = (iso) => {
 };
 
 const DARK_TAG_COLORS = [
-  "bg-violet-500/10 text-violet-400 border-violet-500/20",
-  "bg-cyan-500/10 text-cyan-400 border-cyan-500/20",
-  "bg-indigo-500/10 text-indigo-400 border-indigo-500/20",
-  "bg-fuchsia-500/10 text-fuchsia-400 border-fuchsia-500/20",
-  "bg-sky-500/10 text-sky-400 border-sky-500/20",
+  "bg-zinc-800/50 text-zinc-300 border-zinc-700/50",
+  "bg-neutral-800/50 text-neutral-300 border-neutral-700/50",
+  "bg-stone-800/50 text-stone-300 border-stone-700/50",
+  "bg-gray-800/50 text-gray-300 border-gray-700/50",
+  "bg-slate-800/50 text-slate-300 border-slate-700/50",
 ];
+
 const LIGHT_TAG_COLORS = [
-  "bg-purple-100 text-purple-700 border-purple-200",
-  "bg-cyan-100 text-cyan-700 border-cyan-200",
-  "bg-indigo-100 text-indigo-700 border-indigo-200",
-  "bg-fuchsia-100 text-fuchsia-700 border-fuchsia-200",
-  "bg-sky-100 text-sky-700 border-sky-200",
+  "bg-zinc-100 text-zinc-700 border-zinc-200",
+  "bg-neutral-100 text-neutral-700 border-neutral-200",
+  "bg-stone-100 text-stone-700 border-stone-200",
+  "bg-gray-100 text-gray-700 border-gray-200",
+  "bg-slate-100 text-slate-700 border-slate-200",
 ];
 
 const tagColor = (i, isDark) =>
@@ -48,13 +49,92 @@ const ArticleReader = ({ article, onBack }) => {
   const { isDarkMode } = useThemeStore();
   const [isLiked, setIsLiked] = useState(false);
   const [isBookmarked, setIsBookmarked] = useState(false);
+  const bodyRef = useRef(null);
+
+  // ── Decorate <pre> blocks with terminal chrome (same as WritingStudio) ───────
+  const enhanceCodeBlocks = useCallback(() => {
+    const container = bodyRef.current;
+    if (!container) return;
+
+    container.querySelectorAll("pre").forEach((pre) => {
+      if (pre.dataset.enhanced === "1") return;
+      pre.dataset.enhanced = "1";
+
+      // If the pre came from WritingStudio it already has .ws-pre-content inside;
+      // if it's a raw <pre>, we wrap its content now.
+      let contentSpan = pre.querySelector(".ws-pre-content");
+      if (!contentSpan) {
+        contentSpan = document.createElement("span");
+        contentSpan.className = "ws-pre-content";
+        contentSpan.innerHTML = pre.innerHTML;
+        pre.innerHTML = "";
+        pre.appendChild(contentSpan);
+      }
+
+      // Traffic-light dots
+      const dots = document.createElement("span");
+      dots.className = "ws-pre-dots";
+      dots.innerHTML = `
+        <span style="background:#ff5f57;width:12px;height:12px;border-radius:50%;display:block;"></span>
+        <span style="background:#febc2e;width:12px;height:12px;border-radius:50%;display:block;"></span>
+        <span style="background:#28c840;width:12px;height:12px;border-radius:50%;display:block;"></span>
+      `;
+      pre.appendChild(dots);
+
+      // Save button
+      const saveBtn = document.createElement("button");
+      saveBtn.className = "ws-pre-save-btn";
+      saveBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Save`;
+      saveBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const code = contentSpan.innerText || contentSpan.textContent || "";
+        const blob = new Blob([code], { type: "text/plain" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "code-snippet.txt";
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+      pre.appendChild(saveBtn);
+
+      // Copy button
+      const copyBtn = document.createElement("button");
+      copyBtn.className = "ws-pre-copy-btn";
+      copyBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path></svg>Copy`;
+      copyBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        const code = contentSpan.innerText || contentSpan.textContent || "";
+        navigator.clipboard.writeText(code).then(() => {
+          copyBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#28c840" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>Copied!`;
+          copyBtn.style.color = "#28c840";
+          setTimeout(() => {
+            copyBtn.innerHTML = `<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"></path></svg>Copy`;
+            copyBtn.style.color = "";
+          }, 2000);
+        });
+      });
+      pre.appendChild(copyBtn);
+    });
+  }, []);
+
+
+  const hasHtmlContent = /<[a-z][\s\S]*>/i.test(article.article_content || "");
+  // Run after the HTML content is painted
+  useEffect(() => {
+    if (hasHtmlContent) {
+      // Small delay lets dangerouslySetInnerHTML finish painting
+      const t = setTimeout(enhanceCodeBlocks, 50);
+      return () => clearTimeout(t);
+    }
+  }, [article, hasHtmlContent, enhanceCodeBlocks]);
 
   if (!article) return null;
 
   const authorName = article.article_author?.user_name ?? "Unknown Author";
   const subjectName = article.article_subject?.subject_name;
   // Content may be HTML (from WritingStudio rich editor) or plain text
-  const hasHtmlContent = /<[a-z][\s\S]*>/i.test(article.article_content || "");
+  
   // For read time, strip HTML
   const plainContent = hasHtmlContent
     ? article.article_content.replace(/<[^>]*>/g, "")
@@ -66,7 +146,7 @@ const ArticleReader = ({ article, onBack }) => {
     <div
       className={`h-full w-full rounded-2xl border shadow-2xl overflow-y-auto flex flex-col transition-colors duration-300
         ${isDarkMode
-          ? "bg-[#0d0f1a] border-[#1e2035] text-slate-200"
+          ? "bg-[#121212] border-zinc-800 text-zinc-300"
           : "bg-white border-gray-200 text-gray-800"
         }`}
     >
@@ -74,7 +154,7 @@ const ArticleReader = ({ article, onBack }) => {
       <div
         className={`sticky top-0 z-20 px-6 py-4 backdrop-blur-md border-b flex items-center justify-between
           ${isDarkMode
-            ? "bg-[#0d0f1a]/90 border-[#1e2035]"
+            ? "bg-[#121212]/90 border-zinc-800"
             : "bg-white/90 border-gray-200"
           }`}
       >
@@ -82,8 +162,8 @@ const ArticleReader = ({ article, onBack }) => {
           onClick={onBack}
           className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm font-medium transition-colors
             ${isDarkMode
-              ? "text-slate-400 hover:text-violet-400 hover:bg-violet-500/10"
-              : "text-gray-500 hover:text-purple-600 hover:bg-purple-50"
+              ? "text-zinc-400 hover:text-white hover:bg-zinc-800/50"
+              : "text-gray-500 hover:text-black hover:bg-gray-100"
             }`}
         >
           <ArrowLeft size={17} />
@@ -96,11 +176,11 @@ const ArticleReader = ({ article, onBack }) => {
             className={`p-2 rounded-xl transition-colors
               ${isBookmarked
                 ? isDarkMode
-                  ? "text-violet-400 bg-violet-500/10"
-                  : "text-purple-600 bg-purple-100"
+                  ? "text-white bg-zinc-800"
+                  : "text-black bg-gray-200"
                 : isDarkMode
-                  ? "text-slate-500 hover:text-slate-200 hover:bg-white/5"
-                  : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                  ? "text-zinc-500 hover:text-white hover:bg-zinc-800/50"
+                  : "text-gray-400 hover:text-black hover:bg-gray-100"
               }`}
             title="Bookmark"
           >
@@ -110,8 +190,8 @@ const ArticleReader = ({ article, onBack }) => {
           <button
             className={`p-2 rounded-xl transition-colors
               ${isDarkMode
-                ? "text-slate-500 hover:text-slate-200 hover:bg-white/5"
-                : "text-gray-400 hover:text-gray-700 hover:bg-gray-100"
+                ? "text-zinc-500 hover:text-white hover:bg-zinc-800/50"
+                : "text-gray-400 hover:text-black hover:bg-gray-100"
               }`}
             title="Share"
           >
@@ -139,7 +219,7 @@ const ArticleReader = ({ article, onBack }) => {
 
         {/* Title */}
         <h1
-          className={`text-3xl md:text-5xl font-extrabold leading-tight mb-8 ${isDarkMode ? "text-slate-100" : "text-gray-900"}`}
+          className={`text-3xl md:text-5xl font-extrabold leading-tight mb-8 ${isDarkMode ? "text-zinc-100" : "text-black"}`}
         >
           {article.article_title}
         </h1>
@@ -147,22 +227,22 @@ const ArticleReader = ({ article, onBack }) => {
         {/* Meta row */}
         <div
           className={`flex flex-wrap items-center gap-x-6 gap-y-3 text-sm border-y py-4 mb-10
-            ${isDarkMode ? "border-[#1e2035] text-slate-500" : "border-gray-100 text-gray-500"}`}
+            ${isDarkMode ? "border-zinc-800 text-zinc-400" : "border-gray-200 text-gray-500"}`}
         >
           <div className="flex items-center gap-2">
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center
-                ${isDarkMode ? "bg-violet-500/20 text-violet-400" : "bg-purple-100 text-purple-600"}`}
+                ${isDarkMode ? "bg-zinc-800 text-zinc-300" : "bg-gray-100 text-gray-600"}`}
             >
               <User size={15} />
             </div>
-            <span className={`font-semibold ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}>
+            <span className={`font-semibold ${isDarkMode ? "text-zinc-200" : "text-gray-700"}`}>
               {authorName}
             </span>
           </div>
 
           {subjectName && (
-            <div className={`flex items-center gap-1.5 font-medium ${isDarkMode ? "text-violet-400" : "text-purple-600"}`}>
+            <div className={`flex items-center gap-1.5 font-medium ${isDarkMode ? "text-zinc-300" : "text-gray-600"}`}>
               {subjectName}
             </div>
           )}
@@ -188,12 +268,13 @@ const ArticleReader = ({ article, onBack }) => {
         {/* Body — supports both HTML (rich editor) and plain text */}
         {hasHtmlContent ? (
           <div
-            className={`article-body text-base md:text-lg leading-[1.9] ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}
+            ref={bodyRef}
+            className={`article-body text-base md:text-lg leading-[1.9] ${isDarkMode ? "text-zinc-300" : "text-gray-700"}`}
             dangerouslySetInnerHTML={{ __html: article.article_content }}
           />
         ) : (
           <div
-            className={`text-base md:text-lg leading-[1.9] whitespace-pre-wrap ${isDarkMode ? "text-slate-300" : "text-gray-700"}`}
+            className={`text-base md:text-lg leading-[1.9] whitespace-pre-wrap ${isDarkMode ? "text-zinc-300" : "text-gray-700"}`}
           >
             {article.article_content}
           </div>
@@ -202,18 +283,18 @@ const ArticleReader = ({ article, onBack }) => {
         {/* Footer actions */}
         <footer
           className={`mt-16 pt-8 border-t flex items-center justify-center gap-4 pb-10
-            ${isDarkMode ? "border-[#1e2035]" : "border-gray-100"}`}
+            ${isDarkMode ? "border-zinc-800" : "border-gray-200"}`}
         >
           <button
             onClick={() => setIsLiked(!isLiked)}
             className={`flex items-center gap-2 px-6 py-3 rounded-full font-bold transition-all duration-300
               ${isLiked
                 ? isDarkMode
-                  ? "bg-violet-600 text-white shadow-[0_0_20px_rgba(139,92,246,0.35)]"
-                  : "bg-purple-600 text-white shadow-[0_0_20px_rgba(147,51,234,0.25)]"
+                  ? "bg-zinc-100 text-black shadow-[0_0_20px_rgba(255,255,255,0.15)]"
+                  : "bg-black text-white shadow-[0_0_20px_rgba(0,0,0,0.15)]"
                 : isDarkMode
-                  ? "bg-[#111425] text-slate-300 hover:bg-[#1a1d35]"
-                  : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                  ? "bg-zinc-900 text-zinc-300 hover:bg-zinc-800 hover:text-white"
+                  : "bg-gray-100 text-gray-700 hover:bg-gray-200 hover:text-black"
               }`}
           >
             <Heart size={19} className={isLiked ? "fill-current" : ""} />
@@ -223,19 +304,79 @@ const ArticleReader = ({ article, onBack }) => {
       </div>
 
       <style>{`
-        .article-body h1 { font-size: 2em; font-weight: 700; margin: 1.4em 0 0.5em; line-height: 1.2; }
-        .article-body h2 { font-size: 1.5em; font-weight: 600; margin: 1.2em 0 0.4em; line-height: 1.3; }
-        .article-body h3 { font-size: 1.2em; font-weight: 600; margin: 1em 0 0.3em; }
+        .article-body h1 { font-size: 2em; font-weight: 700; margin: 1.4em 0 0.5em; line-height: 1.2; color: ${isDarkMode ? '#fff' : '#000'}; }
+        .article-body h2 { font-size: 1.5em; font-weight: 600; margin: 1.2em 0 0.4em; line-height: 1.3; color: ${isDarkMode ? '#fff' : '#000'}; }
+        .article-body h3 { font-size: 1.2em; font-weight: 600; margin: 1em 0 0.3em; color: ${isDarkMode ? '#fff' : '#000'}; }
         .article-body p { margin-bottom: 1.1em; }
         .article-body ul { list-style-type: disc; margin: 0.8em 0 1em 1.4em; }
         .article-body ol { list-style-type: decimal; margin: 0.8em 0 1em 1.4em; }
         .article-body li { margin-bottom: 0.3em; }
-        .article-body blockquote { border-left: 3px solid #8b5cf6; margin: 1.5em 0; padding: 0.5em 0 0.5em 1.2em; font-style: italic; opacity: 0.8; }
-        .article-body pre { background: #161625; border: 1px solid #252545; border-radius: 6px; padding: 1em 1.2em; margin: 1.2em 0; overflow-x: auto; }
+        .article-body blockquote { border-left: 3px solid ${isDarkMode ? '#52525b' : '#a1a1aa'}; margin: 1.5em 0; padding: 0.5em 0 0.5em 1.2em; font-style: italic; opacity: 0.9; }
+
+        /* ── Terminal-style code blocks (matches WritingStudio) ── */
+        .article-body pre {
+          position: relative;
+          font-family: 'JetBrains Mono', 'Fira Code', monospace;
+          font-size: 0.875em;
+          background: #1a1b26;
+          border: 1px solid #2a2a3e;
+          border-radius: 10px;
+          margin: 1.4em 0;
+          overflow: hidden;
+          box-shadow: 0 8px 32px rgba(0,0,0,0.35);
+        }
+        .article-body pre::before {
+          content: '';
+          display: block;
+          height: 38px;
+          background: #252535;
+          border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+        .article-body .ws-pre-content {
+          display: block;
+          padding: 1em 1.2em;
+          overflow-x: auto;
+          white-space: pre;
+          color: #c8d3f5;
+          line-height: 1.7;
+        }
+        .article-body .ws-pre-dots {
+          position: absolute;
+          top: 11px;
+          left: 14px;
+          display: flex;
+          gap: 6px;
+          pointer-events: none;
+          z-index: 2;
+        }
+        .article-body .ws-pre-copy-btn,
+        .article-body .ws-pre-save-btn {
+          position: absolute;
+          top: 7px;
+          z-index: 2;
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          padding: 3px 10px;
+          border-radius: 6px;
+          border: 1px solid rgba(255,255,255,0.1);
+          background: rgba(255,255,255,0.07);
+          color: rgba(200,211,245,0.7);
+          font-family: 'Sora', sans-serif;
+          font-size: 11px;
+          cursor: pointer;
+          transition: background 0.15s, color 0.15s;
+        }
+        .article-body .ws-pre-copy-btn { right: 10px; }
+        .article-body .ws-pre-save-btn { right: 88px; }
+        .article-body .ws-pre-copy-btn:hover,
+        .article-body .ws-pre-save-btn:hover { background: rgba(255,255,255,0.14); color: #c8d3f5; }
+
         .article-body code { font-family: 'JetBrains Mono', monospace; font-size: 0.875em; }
-        .article-body a { color: #8b5cf6; text-decoration: underline; }
-        .article-body img { max-width: 100%; border-radius: 8px; margin: 1em 0; }
-        .article-body strong { font-weight: 600; }
+        .article-body a { color: ${isDarkMode ? '#f4f4f5' : '#18181b'}; text-decoration: underline; text-decoration-color: ${isDarkMode ? '#52525b' : '#a1a1aa'}; text-underline-offset: 2px; }
+        .article-body a:hover { text-decoration-color: ${isDarkMode ? '#f4f4f5' : '#18181b'}; }
+        .article-body img { max-width: 100%; border-radius: 8px; margin: 1em 0; border: 1px solid ${isDarkMode ? '#27272a' : '#e4e4e7'}; }
+        .article-body strong { font-weight: 600; color: ${isDarkMode ? '#fff' : '#000'}; }
       `}</style>
     </div>
   );

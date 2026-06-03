@@ -14,10 +14,10 @@ export const useSubjectStore = create((set, get) => ({
   setSelectedSubject: (subject) => set({ selectedSubject: subject }),
   clearSelectedSubject: () => set({ selectedSubject: null }),
 
-  addSubject: async (subjectDetails) => {
+  addSubject: async ({subject_name, subject_description}) => {
     try {
       set({ isAddingSubject: true });
-      const res = await AxiosAPI.post("/subject/add-subject", subjectDetails);
+      const res = await AxiosAPI.post("/subject/add-subject", {subject_name, subject_description});
       // Append new subject to local list so sidebar updates without a full refetch
       set((state) => ({
         subjectsList: [...state.subjectsList, res.data.subject],

@@ -4,31 +4,35 @@ import toast from "react-hot-toast";
 
 export const useArticleStore = create((set, get) => ({
   articleToRead: null,
-  articles: [],          // [] not null — so .length checks work without crashing
+  articles: [],
 
-  isFetchingArticles: false,   // unified name used by MainBody & ArticleReader
+  isFetchingArticles: false,
   isCreatingArticle: false,
   isDeletingArticle: false,
 
-  // ── Go back from reader to list ──────────────────────────────────────────
   clearArticleToRead: () => set({ articleToRead: null }),
 
-  // ── Create ───────────────────────────────────────────────────────────────
   createArticle: async (article) => {
     try {
       set({ isCreatingArticle: true });
       const res = await AxiosAPI.post("/article/create-article", article);
+      
+      // FIX: Optimistically update the UI by adding the new article to the state
+      set((state) => ({
+        articles: [res.data.article, ...state.articles],
+      }));
+      
       toast.success("Article created!");
-      console.log(res.data.article);
+      return true; // FIX: Return true so the Studio knows it can close
     } catch (error) {
       console.log(error);
-      toast.error("Unable to create article");
+      toast.error(error.response?.data?.message || "Unable to create article");
+      return false;
     } finally {
       set({ isCreatingArticle: false });
     }
   },
 
-  // ── Delete (optimistic removal from list) ────────────────────────────────
   deleteArticle: async (articleId) => {
     try {
       set({ isDeletingArticle: true });
@@ -45,7 +49,6 @@ export const useArticleStore = create((set, get) => ({
     }
   },
 
-  // ── All articles ─────────────────────────────────────────────────────────
   getAllArticles: async () => {
     try {
       set({ isFetchingArticles: true });
@@ -59,10 +62,8 @@ export const useArticleStore = create((set, get) => ({
     }
   },
 
-  // ── Subject-wise articles ────────────────────────────────────────────────
   getSubjectWiseArticles: async (subjectSlug) => {
     try {
-      // Clear previous articles + reader when switching subjects
       set({ isFetchingArticles: true, articles: [], articleToRead: null });
       const res = await AxiosAPI.get(`/article/subject-wise/article/${subjectSlug}`);
       set({ articles: res.data.articles });
@@ -74,8 +75,6 @@ export const useArticleStore = create((set, get) => ({
     }
   },
 
-  // ── Open a single article for reading ───────────────────────────────────
-  // Backend route is GET /article/read-article/:articleId (was wrongly POST before)
   readArticle: async (articleId) => {
     try {
       set({ isFetchingArticles: true });
