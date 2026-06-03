@@ -72,7 +72,7 @@ const VocabView = () => {
             placeholder="Meaning / Definition"
             value={meaning}
             onChange={(e) => setMeaning(e.target.value)}
-            className={`flex-[2] px-4 py-3 rounded-xl border outline-none focus:border-zinc-400 transition-colors ${themeClasses.input}`}
+            className={`flex-2 px-4 py-3 rounded-xl border outline-none focus:border-zinc-400 transition-colors ${themeClasses.input}`}
           />
           <button
             type="submit"
