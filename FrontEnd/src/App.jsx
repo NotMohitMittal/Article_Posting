@@ -15,14 +15,18 @@ import { useArticleStore } from "./context/ArticleContext";
 import { useThemeStore } from "./context/ThemeContext";
 import ProtectedRoute from "./components/ProtectedRoute";
 import PublicRoute from "./components/PublicRoute";
+import CalendarView from "./components/CalendarView";
+import VocabView from "./components/VacabView";
 // ── Protected layout (sidebar + main content area) ──────────────────────────
 const AppLayout = () => {
   const { articleToRead, clearArticleToRead } = useArticleStore();
   const { isDarkMode } = useThemeStore();
 
-  // Modal / view state lifted here so Sidebar can open them
   const [addSubjectOpen, setAddSubjectOpen] = useState(false);
   const [writingOpen, setWritingOpen] = useState(false);
+
+  // NEW: State to track which feature is currently active
+  const [activeView, setActiveView] = useState("notebook"); // "notebook" | "calendar" | "vocab"
 
   return (
     <div
@@ -30,33 +34,38 @@ const AppLayout = () => {
         isDarkMode ? "bg-[#090b1a]" : "bg-gray-100"
       }`}
     >
-      {/* Sidebar — receives the two action props it needs */}
       <Sidebar
         onAddSubject={() => setAddSubjectOpen(true)}
         onWriteArticle={() => setWritingOpen(true)}
+        // Pass the navigation controls to the sidebar
+        activeView={activeView}
+        onNavigate={(view) => {
+          setActiveView(view);
+          clearArticleToRead(); // clear reader if switching tabs
+        }}
       />
 
-      {/* Main content */}
       <main className="flex-1 overflow-hidden p-4">
+        {/* Conditional rendering based on what the user clicked */}
         {articleToRead ? (
           <ArticleReader article={articleToRead} onBack={clearArticleToRead} />
+        ) : activeView === "calendar" ? (
+          <CalendarView />
+        ) : activeView === "vocab" ? (
+          <VocabView />
         ) : (
           <MainBody />
         )}
       </main>
 
-      {/* Add Subject Modal */}
       <AddSubjectModal
         open={addSubjectOpen}
         onClose={() => setAddSubjectOpen(false)}
       />
-
-      {/* Writing Studio slide-over */}
       <WritingStudio open={writingOpen} onClose={() => setWritingOpen(false)} />
     </div>
   );
 };
-
 // ── Root ─────────────────────────────────────────────────────────────────────
 export default function App() {
   const { authUser, isCheckingAuth, checkAuth } = useAuthStore();

@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import {
+  Languages,
   Calendar,
   BookOpen,
   Heart,
@@ -13,7 +14,6 @@ import {
   ChevronRight,
   X,
   Loader2,
-  // Imported for dynamic subject icons:
   Terminal,
   Calculator,
   FlaskConical,
@@ -161,7 +161,7 @@ const SectionLabel = ({
 );
 
 // ── Sidebar ───────────────────────────────────────────────────────────────────
-const Sidebar = ({ onAddSubject, onWriteArticle }) => {
+const Sidebar = ({ onAddSubject, onWriteArticle, onNavigate, activeView }) => {
   const {
     isFetchingSubjects,
     subjectsList,
@@ -169,7 +169,6 @@ const Sidebar = ({ onAddSubject, onWriteArticle }) => {
     setSelectedSubject,
     deleteSubject,
   } = useSubjectStore();
-
   const { getSubjectWiseArticles } = useArticleStore();
   const { isDarkMode, setDark, setLight } = useThemeStore();
   const { authUser, logout } = useAuthStore();
@@ -185,6 +184,7 @@ const Sidebar = ({ onAddSubject, onWriteArticle }) => {
     setActiveSubjectId(subject._id);
     setSelectedSubject(subject);
     getSubjectWiseArticles(subject.subject_slug);
+    onNavigate("notebook"); 
   };
 
   const handleDeleteSubject = async (subject) => {
@@ -198,6 +198,11 @@ const Sidebar = ({ onAddSubject, onWriteArticle }) => {
     if (activeSubjectId === subject._id) setActiveSubjectId(null);
   };
 
+  // Guarantee subjects are ALWAYS sorted alphabetically A-Z
+  const sortedSubjects = [...subjectsList].sort((a, b) =>
+    a.subject_name.localeCompare(b.subject_name)
+  );
+
   const bg = isDarkMode
     ? "bg-[#121212] border-zinc-800"
     : "bg-white border-gray-200";
@@ -209,6 +214,23 @@ const Sidebar = ({ onAddSubject, onWriteArticle }) => {
 
   return (
     <div className="h-screen shrink-0 relative">
+      {/* ── Custom Scrollbar Styles ── */}
+      <style>{`
+        .sidebar-scroll::-webkit-scrollbar {
+          width: 4px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb {
+          background-color: ${isDarkMode ? "#3f3f46" : "#d1d5db"};
+          border-radius: 10px;
+        }
+        .sidebar-scroll::-webkit-scrollbar-thumb:hover {
+          background-color: ${isDarkMode ? "#52525b" : "#9ca3af"};
+        }
+      `}</style>
+
       <aside
         className={`flex flex-col h-full border-r transition-all duration-300 ease-in-out ${bg}
         ${isExpanded ? "w-60" : "w-16"}`}
@@ -272,7 +294,7 @@ const Sidebar = ({ onAddSubject, onWriteArticle }) => {
 
         {/* ── Navigation ── */}
         <div
-          className={`flex-1 overflow-y-auto flex flex-col gap-4 py-4
+          className={`sidebar-scroll flex-1 overflow-y-auto flex flex-col gap-4 py-4
           ${isExpanded ? "px-3" : "px-2"}`}
         >
           {/* Subjects */}
@@ -293,28 +315,31 @@ const Sidebar = ({ onAddSubject, onWriteArticle }) => {
                   <Loader2 size={12} className="animate-spin" />
                   {isExpanded && "Loading…"}
                 </div>
-              ) : subjectsList.length === 0 ? (
+              ) : sortedSubjects.length === 0 ? (
                 isExpanded && (
-                  <div className="px-3 py-2">
+                  <div className="px-3 py-2 text-center">
                     <p
-                      className={`text-xs mb-2 ${isDarkMode ? "text-zinc-500" : "text-gray-400"}`}
+                      className={`text-xs mb-1 ${isDarkMode ? "text-zinc-500" : "text-gray-400"}`}
                     >
                       No subjects yet
                     </p>
+                    {/* Empty State Add Button Highlighted */}
                     <button
                       onClick={onAddSubject}
-                      className={`flex items-center gap-1.5 text-xs font-semibold transition-colors
-                        ${isDarkMode ? "text-zinc-300 hover:text-white" : "text-gray-600 hover:text-black"}`}
+                      className={`mt-3 w-full flex items-center justify-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold transition-all shadow-sm
+                        ${isDarkMode 
+                          ? "bg-zinc-800 text-white hover:bg-zinc-700 border border-zinc-700" 
+                          : "bg-gray-100 text-black hover:bg-gray-200 border border-gray-200"}`}
                     >
-                      <Plus size={12} /> Add your first subject
+                      <Plus size={14} /> Add your first subject
                     </button>
                   </div>
                 )
               ) : (
-                subjectsList.map((subject) => (
+                sortedSubjects.map((subject) => (
                   <NavItem
                     key={subject._id}
-                    icon={getSubjectIcon(subject.subject_name)} // <-- Dynamic Icon Here
+                    icon={getSubjectIcon(subject.subject_name)}
                     label={subject.subject_name}
                     isExpanded={isExpanded}
                     isDarkMode={isDarkMode}
@@ -325,18 +350,17 @@ const Sidebar = ({ onAddSubject, onWriteArticle }) => {
                 ))
               )}
 
-              {/* "Add subject" row at the bottom of a non-empty list */}
-              {isExpanded && subjectsList.length > 0 && (
+              {/* Bottom Add Button Highlighted */}
+              {isExpanded && sortedSubjects.length > 0 && (
                 <button
                   onClick={onAddSubject}
-                  className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs transition-colors mt-0.5
-                    ${
-                      isDarkMode
-                        ? "text-zinc-400 hover:text-white hover:bg-zinc-800"
-                        : "text-gray-500 hover:text-black hover:bg-gray-100"
+                  className={`w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl text-xs font-bold transition-all mt-2 shadow-sm
+                    ${isDarkMode
+                      ? "bg-zinc-800 text-white hover:bg-zinc-700 border border-zinc-700"
+                      : "bg-gray-100 text-black hover:bg-gray-200 border border-gray-200"
                     }`}
                 >
-                  <Plus size={13} />
+                  <Plus size={14} />
                   Add subject
                 </button>
               )}
@@ -345,32 +369,25 @@ const Sidebar = ({ onAddSubject, onWriteArticle }) => {
 
           {/* More */}
           <div>
-            <SectionLabel
-              label="More"
-              isExpanded={isExpanded}
-              isDarkMode={isDarkMode}
-            />
+            <SectionLabel label="More" isExpanded={isExpanded} isDarkMode={isDarkMode} />
             <nav className="flex flex-col gap-0.5">
               <NavItem
                 icon={<Calendar size={16} />}
                 label="Calendar"
-                badge="New"
-                badgeColor={isDarkMode ? "bg-zinc-700" : "bg-black"}
                 isExpanded={isExpanded}
                 isDarkMode={isDarkMode}
+                active={activeView === "calendar"}
+                onClick={() => onNavigate("calendar")}
               />
-              <NavItem
-                icon={<BookOpen size={16} />}
-                label="Docs"
-                isExpanded={isExpanded}
-                isDarkMode={isDarkMode}
+              <NavItem 
+                icon={<Languages size={16} />}
+                label="Vocabulary"
+                isExpanded={isExpanded} 
+                isDarkMode={isDarkMode} 
+                active={activeView === "vocab"}
+                onClick={() => onNavigate("vocab")}
               />
-              <NavItem
-                icon={<Heart size={16} />}
-                label="Saved"
-                isExpanded={isExpanded}
-                isDarkMode={isDarkMode}
-              />
+              <NavItem icon={<Heart size={16} />} label="Saved" isExpanded={isExpanded} isDarkMode={isDarkMode} />
             </nav>
           </div>
         </div>
