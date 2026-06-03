@@ -43,7 +43,7 @@ export const useArticleStore = create((set, get) => ({
       toast.success("Article deleted");
     } catch (error) {
       console.log(error);
-      toast.error("Unable to delete article");
+      toast.error(error.response?.data?.message || "Unable to delete article");
     } finally {
       set({ isDeletingArticle: false });
     }

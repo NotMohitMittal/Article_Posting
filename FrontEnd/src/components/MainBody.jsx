@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { useArticleStore } from "../context/ArticleContext";
 import { useSubjectStore } from "../context/SubjectContext";
 import { useThemeStore } from "../context/ThemeContext";
+import { useAuthStore } from "../context/AuthContext"; // <-- Added this
 import {
   BookOpen,
   Clock,
@@ -11,14 +12,12 @@ import {
   Loader2,
   Bookmark,
   Search,
+  Trash2,
 } from "lucide-react";
 
-// ── Utility ─────────────────────────────────────────────────────────────────
 const estimateReadTime = (content = "") =>
   Math.max(1, Math.ceil(content.trim().split(/\s+/).length / 200));
 
-// Dark mode: zinc/neutral palette
-// Light mode: gray/black palette
 const DARK_TAG_COLORS = [
   "bg-zinc-800/50 text-zinc-300 border-zinc-700/50",
   "bg-neutral-800/50 text-neutral-300 border-neutral-700/50",
@@ -39,8 +38,11 @@ const tagColor = (i, isDark) =>
   isDark ? DARK_TAG_COLORS[i % DARK_TAG_COLORS.length] : LIGHT_TAG_COLORS[i % LIGHT_TAG_COLORS.length];
 
 // ── Article Row Card ────────────────────────────────────────────────────────
-const ArticleRowCard = ({ article, onRead, isDarkMode }) => {
+const ArticleRowCard = ({ article, onRead, onDelete, isDarkMode, authUser }) => {
   const readTime = estimateReadTime(article.article_content);
+  
+  // FIX: Check if the currently logged in user is the author of this specific article
+  const isAuthor = article.article_author?._id === authUser?._id;
 
   return (
     <div
@@ -50,7 +52,6 @@ const ArticleRowCard = ({ article, onRead, isDarkMode }) => {
           : "bg-white hover:bg-gray-50 border-gray-200/80 hover:border-gray-300 hover:shadow-md hover:shadow-gray-200"
         }`}
     >
-      {/* Left icon anchor */}
       <div
         className={`hidden md:flex shrink-0 w-11 h-11 rounded-xl items-center justify-center border transition-colors
           ${isDarkMode
@@ -61,7 +62,6 @@ const ArticleRowCard = ({ article, onRead, isDarkMode }) => {
         <Bookmark size={18} />
       </div>
 
-      {/* Title, snippet, tags */}
       <div className="flex-1 min-w-0 flex flex-col justify-center">
         <div className="flex flex-wrap gap-2 mb-2">
           {article.article_tags?.map((tag, i) => (
@@ -86,7 +86,6 @@ const ArticleRowCard = ({ article, onRead, isDarkMode }) => {
         </h3>
 
         <p className={`text-sm line-clamp-2 leading-relaxed ${isDarkMode ? "text-zinc-400" : "text-gray-500"}`}>
-          {/* Strip HTML tags for preview */}
           {article.article_content?.replace(/<[^>]*>/g, "") || ""}
         </p>
 
@@ -107,9 +106,8 @@ const ArticleRowCard = ({ article, onRead, isDarkMode }) => {
         )}
       </div>
 
-      {/* Meta + action */}
       <div
-        className={`flex items-center md:flex-col justify-between md:justify-center shrink-0 border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-6 min-w-28
+        className={`flex items-center md:flex-col justify-between md:justify-center shrink-0 border-t md:border-t-0 md:border-l pt-4 md:pt-0 md:pl-6 min-w-36
           ${isDarkMode ? "border-zinc-800" : "border-gray-100"}`}
       >
         <div className={`flex items-center gap-1.5 text-xs font-medium md:mb-4 ${isDarkMode ? "text-zinc-500" : "text-gray-400"}`}>
@@ -117,17 +115,39 @@ const ArticleRowCard = ({ article, onRead, isDarkMode }) => {
           {readTime} min read
         </div>
 
-        <button
-          onClick={() => onRead(article._id)}
-          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200
-            ${isDarkMode
-              ? "bg-zinc-800 hover:bg-zinc-200 text-zinc-300 hover:text-black"
-              : "bg-gray-100 hover:bg-black text-gray-700 hover:text-white"
-            }`}
-        >
-          Read
-          <ArrowRight size={15} />
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => onRead(article._id)}
+            className={`flex items-center gap-1.5 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200
+              ${isDarkMode
+                ? "bg-zinc-800 hover:bg-zinc-200 text-zinc-300 hover:text-black"
+                : "bg-gray-100 hover:bg-black text-gray-700 hover:text-white"
+              }`}
+          >
+            Read
+            <ArrowRight size={15} />
+          </button>
+
+          {/* FIX: Only render the delete button if the logged-in user is the author */}
+          {isAuthor && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                if (window.confirm(`Are you sure you want to delete "${article.article_title}"?`)) {
+                  onDelete(article._id);
+                }
+              }}
+              title="Delete Article"
+              className={`p-2 rounded-xl transition-all duration-200
+                ${isDarkMode
+                  ? "bg-zinc-800 hover:bg-red-500/10 text-zinc-400 hover:text-red-400"
+                  : "bg-gray-100 hover:bg-red-50 text-gray-500 hover:text-red-600"
+                }`}
+            >
+              <Trash2 size={16} />
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );
@@ -152,9 +172,10 @@ const EmptyState = ({ isDarkMode }) => (
 
 // ── Main Body ───────────────────────────────────────────────────────────────
 const MainBody = () => {
-  const { articles, isFetchingArticles, readArticle } = useArticleStore();
+  const { articles, isFetchingArticles, readArticle, deleteArticle } = useArticleStore();
   const { selectedSubject } = useSubjectStore();
   const { isDarkMode } = useThemeStore();
+  const { authUser } = useAuthStore(); // <-- Get the logged in user here
   const [search, setSearch] = useState("");
 
   const filtered = (articles || []).filter(
@@ -171,7 +192,6 @@ const MainBody = () => {
           : "bg-white border-gray-200 text-gray-800"
         }`}
     >
-      {/* ── Header ── */}
       <div
         className={`px-6 md:px-8 py-5 border-b sticky top-0 z-10 flex flex-col md:flex-row md:items-center justify-between gap-3 transition-colors duration-300
           ${isDarkMode
@@ -192,7 +212,6 @@ const MainBody = () => {
         </div>
 
         <div className="flex items-center gap-3">
-          {/* Live indicator */}
           <div className={`hidden md:flex items-center gap-2 px-3 py-1.5 rounded-xl border text-sm font-medium transition-colors
             ${isDarkMode
               ? "bg-zinc-900 border-zinc-800 text-zinc-400"
@@ -208,7 +227,6 @@ const MainBody = () => {
             Live Feed
           </div>
 
-          {/* Search */}
           {articles.length > 0 && (
             <div className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition-colors
               ${isDarkMode
@@ -230,7 +248,6 @@ const MainBody = () => {
         </div>
       </div>
 
-      {/* ── Content ── */}
       <div className="flex-1 overflow-y-auto p-6 md:p-8">
         {isFetchingArticles ? (
           <div className="h-full flex flex-col items-center justify-center gap-4">
@@ -248,7 +265,9 @@ const MainBody = () => {
                 key={article._id}
                 article={article}
                 onRead={readArticle}
+                onDelete={deleteArticle}
                 isDarkMode={isDarkMode}
+                authUser={authUser} // <-- Pass authUser down to the card
               />
             ))}
           </div>

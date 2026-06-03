@@ -13,7 +13,8 @@ import RegisterPage from "./pages/RegisterPage";
 import { useAuthStore } from "./context/AuthContext";
 import { useArticleStore } from "./context/ArticleContext";
 import { useThemeStore } from "./context/ThemeContext";
-
+import ProtectedRoute from "./components/ProtectedRoute";
+import PublicRoute from "./components/PublicRoute";
 // ── Protected layout (sidebar + main content area) ──────────────────────────
 const AppLayout = () => {
   const { articleToRead, clearArticleToRead } = useArticleStore();
@@ -50,7 +51,7 @@ const AppLayout = () => {
         onClose={() => setAddSubjectOpen(false)}
       />
 
-      {/* FIX: Pass the 'open' prop directly just like you did above! */}
+      {/* Writing Studio slide-over */}
       <WritingStudio open={writingOpen} onClose={() => setWritingOpen(false)} />
     </div>
   );
@@ -76,18 +77,34 @@ export default function App() {
     <>
       <Toaster position="top-right" toastOptions={{ duration: 3000 }} />
       <Routes>
+        {/* Protected Routes */}
         <Route
           path="/"
-          element={authUser ? <AppLayout /> : <Navigate to="/login" replace />}
+          element={
+            <ProtectedRoute authUser={authUser}>
+              <AppLayout />
+            </ProtectedRoute>
+          }
         />
+
+        {/* Public / Non-Protected Routes */}
         <Route
           path="/login"
-          element={!authUser ? <LoginPage /> : <Navigate to="/" replace />}
+          element={
+            <PublicRoute authUser={authUser}>
+              <LoginPage />
+            </PublicRoute>
+          }
         />
         <Route
           path="/register"
-          element={!authUser ? <RegisterPage /> : <Navigate to="/" replace />}
+          element={
+            <PublicRoute authUser={authUser}>
+              <RegisterPage />
+            </PublicRoute>
+          }
         />
+
         {/* Catch-all */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>

@@ -38,7 +38,6 @@ const articleSchema = mongoose.Schema(
       fileId: { type: String, default: null }, // ImageKit fileId (for deletion)
       filePath: { type: String, default: null }, // path inside ImageKit (e.g. /articles/...)
     },
-
     // Inline images embedded in article_content are stored as ImageKit URLs
     // directly inside the HTML — no separate array needed. The fileIds are
     // stored here so we can bulk-delete them when the article is removed.
