@@ -1,7 +1,8 @@
 import axios from "axios";
 
 export const AxiosAPI = axios.create({
-  baseURL: "http://localhost:3000/api",
+  baseURL: import.meta.env.MODE === "production" 
+    ? "/api" 
+    : "http://localhost:3000/api",
   withCredentials: true,
 });
-

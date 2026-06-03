@@ -10,7 +10,7 @@ connectDB();
 if (process.env.ENVIRONMENT === "production") {
   // Use ".." to step out of the BackEnd folder and into the FrontEnd folder
   const frontendPath = path.join(__dirname, "..", "FrontEnd", "dist");
-  
+
   app.use(express.static(frontendPath));
 
   app.get((req, res) => {
