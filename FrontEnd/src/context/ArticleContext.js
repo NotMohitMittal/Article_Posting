@@ -16,12 +16,12 @@ export const useArticleStore = create((set, get) => ({
     try {
       set({ isCreatingArticle: true });
       const res = await AxiosAPI.post("/article/create-article", article);
-      
+
       // FIX: Optimistically update the UI by adding the new article to the state
       set((state) => ({
         articles: [res.data.article, ...state.articles],
       }));
-      
+
       toast.success("Article created!");
       return true; // FIX: Return true so the Studio knows it can close
     } catch (error) {
@@ -65,7 +65,9 @@ export const useArticleStore = create((set, get) => ({
   getSubjectWiseArticles: async (subjectSlug) => {
     try {
       set({ isFetchingArticles: true, articles: [], articleToRead: null });
-      const res = await AxiosAPI.get(`/article/subject-wise/article/${subjectSlug}`);
+      const res = await AxiosAPI.get(
+        `/article/subject-wise/article/${subjectSlug}`,
+      );
       set({ articles: res.data.articles });
     } catch (error) {
       console.log(error);
@@ -85,6 +87,30 @@ export const useArticleStore = create((set, get) => ({
       toast.error("Failed to open article");
     } finally {
       set({ isFetchingArticles: false });
+    }
+  },
+
+  updateArticle: async (articleId, updatedData) => {
+    try {
+      set({ isCreatingArticle: true }); // Reusing loading state for the publish button
+      const res = await AxiosAPI.put(
+        `/article/update/${articleId}`,
+        updatedData,
+      );
+
+      set((state) => ({
+        // Find the old article in the array and replace it with the newly updated one
+        articles: state.articles.map((a) =>
+          a._id === articleId ? res.data.article : a,
+        ),
+      }));
+
+      toast.success("Article updated!");
+    } catch (error) {
+      console.log(error);
+      toast.error(error.response?.data?.message || "Unable to update article");
+    } finally {
+      set({ isCreatingArticle: false });
     }
   },
 }));

@@ -49,4 +49,10 @@ router.get(
   articleController.readArticle,
 );
 
+router.put(
+  "/update/:articleId",
+  authMiddleware.validateLogin,
+  articleController.updateArticle,
+);
+
 module.exports = router;

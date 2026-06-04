@@ -22,11 +22,21 @@ const AppLayout = () => {
   const { articleToRead, clearArticleToRead } = useArticleStore();
   const { isDarkMode } = useThemeStore();
 
+  const [articleToEdit, setArticleToEdit] = useState(null); // <-- Add this state
   const [addSubjectOpen, setAddSubjectOpen] = useState(false);
   const [writingOpen, setWritingOpen] = useState(false);
 
-  // NEW: State to track which feature is currently active
-  const [activeView, setActiveView] = useState("notebook"); // "notebook" | "calendar" | "vocab"
+  const [activeView, setActiveView] = useState("notebook");
+
+  const handleEditArticle = (article) => {
+    setArticleToEdit(article);
+    setWritingOpen(true); // Open the Writing Studio
+  };
+
+  const handleCloseWritingStudio = () => {
+    setWritingOpen(false);
+    setArticleToEdit(null); // Clear the edit state when closed
+  };
 
   return (
     <div
@@ -54,7 +64,7 @@ const AppLayout = () => {
         ) : activeView === "vocab" ? (
           <VocabView />
         ) : (
-          <MainBody />
+          <MainBody onEditArticle={handleEditArticle} />
         )}
       </main>
 
@@ -62,7 +72,11 @@ const AppLayout = () => {
         open={addSubjectOpen}
         onClose={() => setAddSubjectOpen(false)}
       />
-      <WritingStudio open={writingOpen} onClose={() => setWritingOpen(false)} />
+      <WritingStudio
+        open={writingOpen}
+        onClose={handleCloseWritingStudio}
+        articleToEdit={articleToEdit}
+      />
     </div>
   );
 };

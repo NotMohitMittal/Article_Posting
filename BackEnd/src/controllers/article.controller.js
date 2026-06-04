@@ -6,7 +6,7 @@ const mongoose = require("mongoose");
 
 const articleModel = require("../models/article.model");
 const subjectModel = require("../models/subject.model");
-const imagekit = require("../utils/imagekit.server"); // <-- Import the new service
+const imagekit = require("../utils/imagekit.server");
 
 const createArticle = async (req, res) => {
   const {
@@ -120,13 +120,11 @@ const getArticles = async (req, res) => {
       return res.status(404).json({ message: "Articles not found" });
     }
 
-    res
-      .status(200)
-      .json({
-        message: "Articles fetched",
-        count: articleList.length,
-        articleList,
-      });
+    res.status(200).json({
+      message: "Articles fetched",
+      count: articleList.length,
+      articleList,
+    });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Database error" });
@@ -176,10 +174,81 @@ const readArticle = async (req, res) => {
   }
 };
 
+const updateArticle = async (req, res) => {
+  const { articleId } = req.params;
+  const {
+    article_title,
+    article_content,
+    article_subject,
+    article_tags,
+    inline_image_ids,
+    cover_image,
+  } = req.body;
+
+  if (!mongoose.Types.ObjectId.isValid(articleId)) {
+    return res.status(400).json({ message: "Invalid article ID" });
+  }
+
+  try {
+    const article = await articleModel.findById(articleId);
+
+    if (!article) {
+      return res.status(404).json({ message: "Article wasn't found" });
+    }
+
+    // Security check: Only the author can edit
+    if (article.article_author.toString() !== req.user.id) {
+      return res
+        .status(403)
+        .json({ message: "Unauthorized to edit this article" });
+    }
+
+    // Update slug if title changed
+    let article_slug = article.article_slug;
+    if (article_title && article_title !== article.article_title) {
+      article_slug = slugify(article_title, { lower: true, strict: true });
+      const existing_slug = await articleModel.findOne({
+        article_slug,
+        _id: { $ne: articleId },
+      });
+      if (existing_slug) {
+        article_slug = `${article_slug}-${Date.now()}`;
+      }
+    }
+
+    // Update the document
+    const updatedArticle = await articleModel
+      .findByIdAndUpdate(
+        articleId,
+        {
+          article_title,
+          article_content,
+          article_subject,
+          article_tags,
+          article_slug,
+          inline_image_ids: inline_image_ids || article.inline_image_ids,
+          cover_image: cover_image || article.cover_image,
+        },
+        { returnDocument : "after" }, // Returns the updated document
+      )
+      .populate("article_author", "user_name user_email")
+      .populate("article_subject", "subject_name subject_slug");
+
+    res.status(200).json({
+      message: "Article updated successfully",
+      article: updatedArticle,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Database error" });
+  }
+};
+
 module.exports = {
   createArticle,
   deleteArticle,
   getArticles,
   readArticle,
+  updateArticle,
   getArticlesSubjectWise,
 };
